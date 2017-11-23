@@ -70,7 +70,7 @@ public class UDPServer {
 		        DatagramPacket recvPacket 
 		            = new DatagramPacket(recvBuf , recvBuf.length);
 		        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		        
+		        System.out.println("Server is started!");
 		        do
 		        {
 		        try {
