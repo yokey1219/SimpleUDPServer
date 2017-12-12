@@ -7,6 +7,9 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.ef.carparking.app.domain.AppClientInfo;
+import com.ef.carparking.app.domain.AppClientMsg;
+import com.ef.carparking.app.domain.AppMsgLog;
 import com.ef.carparking.domain.DeviceInfo;
 import com.ef.carparking.domain.DeviceLog;
 import com.mysql.jdbc.*;
@@ -84,7 +87,7 @@ public class DbHelper {
 		DeviceInfo info=null;
 		Connection conn = getConn();
 	    int i = 0;
-	    String sql = "select devid,imei,registerat,lastlogin,lastip,state from  t_deviceinfo where iemi=?";
+	    String sql = "select devid,imei,registerat,lastlogin,lastip,state from  t_deviceinfo where imei=?";
 	    PreparedStatement pstmt;
 	    try {
         	pstmt = (PreparedStatement) conn.prepareStatement(sql);
@@ -213,7 +216,7 @@ public class DbHelper {
 	{
 		Connection conn = getConn();
 	    int i = 0;
-	    String sql = "insert into t_devicelog (deviceid,infotype,infocontent,infodate) values(?,?,?,?)";
+	    String sql = "insert into t_devicelog (deviceid,infotype,infocontent,infodate,infoip) values(?,?,?,?,?)";
 	    PreparedStatement pstmt;
 	    try {
         	pstmt = (PreparedStatement) conn.prepareStatement(sql);
@@ -222,6 +225,7 @@ public class DbHelper {
             pstmt.setInt(col++,devicelog.getInfotype());
             pstmt.setString(col++, devicelog.getInfocontent());
  	        pstmt.setTimestamp(col++, new java.sql.Timestamp(devicelog.getInfodate().getTime()));
+ 	        pstmt.setString(col++, devicelog.infoip);
  	        i=pstmt.executeUpdate();
  	        if(i>0)
  	        {
@@ -293,5 +297,211 @@ public class DbHelper {
 			}
 	    }
 	    return list;
+	}
+	
+	public static int Insert(AppClientInfo appinfo)
+	{
+		Connection conn = getConn();
+	    int i = 0;
+	    String sql = "insert into t_appinfo (sn,lastlogin,lastip) values(?,?,?)";
+	    PreparedStatement pstmt;
+	    try {
+        	pstmt = (PreparedStatement) conn.prepareStatement(sql);
+ 	        int col=1;
+            pstmt.setString(col++,appinfo.sn);
+ 	        pstmt.setTimestamp(col++, new java.sql.Timestamp(appinfo.lastlogin.getTime()));
+ 	        pstmt.setString(col++,appinfo.addr.getHostAddress());
+ 	        
+ 	        i=pstmt.executeUpdate();
+ 	        if(i>0)
+ 	        {
+ 	        	i= (int)pstmt.getLastInsertID();
+ 	        	appinfo.id=i;
+ 	        }
+ 	        else
+ 	        	i= -1;
+	        pstmt.close();
+		    return i;
+	        //conn.close();
+	    } catch (SQLException e) {
+	        //e.printStackTrace();
+	    	System.out.println(e.getMessage());
+	    }
+	    finally
+	    {
+	    	try {
+				if(conn!=null)
+					conn.close();
+			} catch (SQLException e) {
+				
+				e.printStackTrace();
+			}
+	    }
+	    return 0;
+	}
+	
+	
+	
+	public static AppClientInfo GetAppInfo(String sn)
+	{
+		AppClientInfo info=null;
+		Connection conn = getConn();
+	    int i = 0;
+	    String sql = "select id,sn,lastip,lastlogin from  t_appinfo where sn=?";
+	    PreparedStatement pstmt;
+	    try {
+        	pstmt = (PreparedStatement) conn.prepareStatement(sql);
+ 	        int col=1;
+            pstmt.setString(col++,sn);
+ 	        ResultSet rs=pstmt.executeQuery();
+ 	        if(rs.first())
+ 	        {
+ 	        	info=new AppClientInfo();
+ 	        	info.id=rs.getInt("id");
+ 	        	info.sn=rs.getString("sn");
+ 	        	info.lastip=rs.getString("lastip");
+ 	        	Timestamp timestmp=rs.getTimestamp("lastlogin");
+ 	        	if(timestmp!=null)
+ 	        		info.lastlogin=new java.util.Date(timestmp.getTime());
+ 	        }
+	        pstmt.close();
+		    return info;
+	        //conn.close();
+	    } catch (SQLException e) {
+	        //e.printStackTrace();
+	    	System.out.println(e.getMessage());
+	    }
+	    finally
+	    {
+	    	try {
+				if(conn!=null)
+					conn.close();
+			} catch (SQLException e) {
+				
+				e.printStackTrace();
+			}
+	    }
+	    return info;
+	}
+	
+	public static List<AppClientInfo> GetAppInfoList()
+	{
+		List<AppClientInfo> list=new ArrayList<AppClientInfo>();
+		AppClientInfo info=null;
+		Connection conn = getConn();
+	    int i = 0;
+	    String sql = "select id,sn,lastlogin,lastip from  t_appinfo";
+	    PreparedStatement pstmt;
+	    try {
+        	pstmt = (PreparedStatement) conn.prepareStatement(sql);
+ 	        int col=1;
+           
+ 	        ResultSet rs=pstmt.executeQuery();
+ 	        while(rs.next())
+ 	        {
+ 	        	info=new AppClientInfo();
+ 	        	info.id=rs.getInt("id");
+ 	        	info.sn=rs.getString("sn");
+ 	        	info.lastip=rs.getString("lastip");
+ 	        	Timestamp timestmp=rs.getTimestamp("lastlogin");
+ 	        	if(timestmp!=null)
+ 	        		info.lastlogin=new java.util.Date(timestmp.getTime());
+ 	        	list.add(info);
+ 	        }
+	        pstmt.close();
+		    return list;
+	        //conn.close();
+	    } catch (SQLException e) {
+	        //e.printStackTrace();
+	    	System.out.println(e.getMessage());
+	    }
+	    finally
+	    {
+	    	try {
+				if(conn!=null)
+					conn.close();
+			} catch (SQLException e) {
+				
+				e.printStackTrace();
+			}
+	    }
+	    return list;
+	}
+	
+	public static int Update(AppClientInfo appinfo)
+	{
+		Connection conn = getConn();
+	    int i = 0;
+	    String sql = "update t_appinfo set sn=?,lastlogin=?,lastip=? where id=?";
+	    PreparedStatement pstmt;
+	    try {
+        	pstmt = (PreparedStatement) conn.prepareStatement(sql);
+ 	        int col=1;
+            pstmt.setString(col++,appinfo.sn);
+ 	        pstmt.setTimestamp(col++, new java.sql.Timestamp(appinfo.lastlogin.getTime()));
+ 	        pstmt.setString(col++,appinfo.lastip);
+ 	        pstmt.setInt(col++, appinfo.id);
+ 	        i=pstmt.executeUpdate();
+	        pstmt.close();
+		    return i;
+	        //conn.close();
+	    } catch (SQLException e) {
+	        //e.printStackTrace();
+	    	System.out.println(e.getMessage());
+	    }
+	    finally
+	    {
+	    	try {
+				if(conn!=null)
+					conn.close();
+			} catch (SQLException e) {
+				
+				e.printStackTrace();
+			}
+	    }
+	    return 0;
+	}
+	
+	public static int Insert(AppMsgLog msglog)
+	{
+		Connection conn = getConn();
+	    int i = 0;
+	    String sql = "insert into t_appmsg (appid,cmd,content,ipaddr,msgdate) values(?,?,?,?,?)";
+	    PreparedStatement pstmt;
+	    try {
+        	pstmt = (PreparedStatement) conn.prepareStatement(sql);
+ 	        int col=1;
+            pstmt.setInt(col++,msglog.getInfo().id);
+            pstmt.setString(col++,msglog.getMsg().getCmd());
+            pstmt.setString(col++, msglog.getMsg().getContent());
+            pstmt.setString(col++, msglog.getMsg().getRemoteaddr().getHostAddress());
+ 	        pstmt.setTimestamp(col++, new java.sql.Timestamp(msglog.getMsgdate().getTime()));
+ 	        
+ 	        i=pstmt.executeUpdate();
+ 	        if(i>0)
+ 	        {
+ 	        	i= (int)pstmt.getLastInsertID();
+ 	        	msglog.setRid(i);
+ 	        }
+ 	        else
+ 	        	i= -1;
+	        pstmt.close();
+		    return i;
+	        //conn.close();
+	    } catch (SQLException e) {
+	        //e.printStackTrace();
+	    	System.out.println(e.getMessage());
+	    }
+	    finally
+	    {
+	    	try {
+				if(conn!=null)
+					conn.close();
+			} catch (SQLException e) {
+				
+				e.printStackTrace();
+			}
+	    }
+	    return 0;
 	}
 }
