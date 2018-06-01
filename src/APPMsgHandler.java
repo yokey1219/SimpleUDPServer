@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Queue;
@@ -6,10 +7,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import com.ef.carparking.app.domain.AppCallBackData;
 import com.ef.carparking.app.domain.AppClientInfo;
 import com.ef.carparking.app.domain.AppClientMsg;
+import com.ef.carparking.app.domain.AppCmdArg;
 import com.ef.carparking.app.domain.AppCommand;
 import com.ef.carparking.app.domain.AppCommandUtil;
 import com.ef.carparking.app.domain.AppMsgLog;
+import com.ef.carparking.app.domain.DevMsgToAPP;
 import com.ef.carparking.domain.DeviceInfo;
+import com.ef.carparking.domain.DeviceMsg;
 import com.ef.carparking.util.UtilTools;
 
 
@@ -55,6 +59,7 @@ protected Queue<AppClientMsg> msgqueue;
 							case AppCommandUtil.APPCMD_LOGIN://登录注册
 								data=new AppCallBackData();
 								data.rsltcode=0;
+								data.cmdid=appcmd.cmdid;
 								data.data=null;
 								UDPServer.PrepareAppSendPacket(UtilTools.sglobalGson.toJson(data), msg.getRemoteaddr(), msg.getRemoteport());
 								break;
@@ -62,6 +67,7 @@ protected Queue<AppClientMsg> msgqueue;
 								List<DeviceInfo> list=DbHelper.GetDeviceInfoList();
 								data=new AppCallBackData();
 								data.rsltcode=0;
+								data.cmdid=appcmd.cmdid;
 								data.data=list;
 								UDPServer.PrepareAppSendPacket(UtilTools.sglobalGson.toJson(data), msg.getRemoteaddr(), msg.getRemoteport());
 								break;
@@ -74,20 +80,41 @@ protected Queue<AppClientMsg> msgqueue;
 							case AppCommandUtil.APPCMD_WATCHDEV://关注设备
 								if(msg.getArgs()!=null&&msg.getArgs().size()>0)
 								{	
-									if(msg.getArgs().get(0).argname=="imei")
+									//System.out.println(String.format("add watching"));
+									if(msg.getArgs().get(0).argname.equals("imei"))
 									{
+										//System.out.println(String.format("add watch:%s",msg.getArgs().get(0).argvalue));
 										String imei=msg.getArgs().get(0).argvalue;
 										DevWatchControl.AddWatch(imei, msg.getRemoteaddr(),msg.getRemoteport());
+										/*DevMsgToAPP devmsg=new DevMsgToAPP();
+										devmsg.imei=imei;
+										devmsg.cmdid=DeviceMsg.CMDID_REPORTCARPARKING;
+										devmsg.args=new ArrayList<AppCmdArg>();
+										AppCmdArg arg=new AppCmdArg();
+										arg.argname="carparking";
+										arg.argtype="String";
+										arg.argvalue="02";
+										devmsg.args.add(arg);
+										data=new AppCallBackData();
+										data.rsltcode=0;
+										data.cmdid=appcmd.cmdid;
+										data.data=devmsg;
+										UDPServer.PrepareAppSendPacket(UtilTools.sglobalGson.toJson(data), msg.getRemoteaddr(), msg.getRemoteport());*/
 									}
 								}
 								break;
 							case AppCommandUtil.APPCMD_DEWATCHDEV://取消关注设备
 								if(msg.getArgs()!=null&&msg.getArgs().size()>0)
 								{	
-									if(msg.getArgs().get(0).argname=="imei")
+									if(msg.getArgs().get(0).argname.equals("imei"))
 									{
 										String imei=msg.getArgs().get(0).argvalue;
 										DevWatchControl.RemoveWatch(imei, msg.getRemoteaddr(),msg.getRemoteport());
+										data=new AppCallBackData();
+										data.rsltcode=0;
+										data.cmdid=appcmd.cmdid;
+										data.data="ok";
+										UDPServer.PrepareAppSendPacket(UtilTools.sglobalGson.toJson(data), msg.getRemoteaddr(), msg.getRemoteport());
 									}
 								}
 								break;

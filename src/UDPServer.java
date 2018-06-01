@@ -8,6 +8,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.ef.carparking.app.domain.AppClientMsg;
+import com.ef.carparking.domain.DeviceInfo;
 import com.ef.carparking.domain.DeviceMsg;
 import com.ef.carparking.util.UtilTools;
 
@@ -115,9 +116,28 @@ public class UDPServer {
 					DeviceMsg devmsg = new DeviceMsg(recvPacket.getData(), recvPacket.getLength());
 					devmsg.setRemote(addr,port);
 					if (devmsg.isAvilable()) {
-						
-						sendBuf = devmsg.makeACK();
-						handler.AddMsg(devmsg);
+						if(devmsg.getCmdid()==DeviceMsg.CMDID_QUERYMODE)
+						{
+							String sn=devmsg.getSerialno();
+							DeviceInfo info=DbHelper.GetDeviceInfo(sn);
+							int mode=-1;
+							if(info!=null)
+							{
+								mode=info.getWorkmode();
+							}
+							byte[] _tmpbuf=new byte[6];
+							sendBuf = devmsg.makeACK();
+							System.arraycopy(_tmpbuf, 0, sendBuf, 0, sendBuf.length);
+							_tmpbuf[4]=(byte)((mode>>8)&0x0ff);
+							_tmpbuf[5]=(byte)(mode&0x0ff);
+							sendBuf=_tmpbuf;
+							//handler.AddMsg(devmsg);
+						}
+						else
+						{
+							sendBuf = devmsg.makeACK();
+							handler.AddMsg(devmsg);
+						}
 					}
 
 					DatagramPacket sendPacket = new DatagramPacket(sendBuf, sendBuf.length, addr, port);
@@ -155,7 +175,7 @@ public class UDPServer {
 
 	static class AppRecvThread extends Thread {
 		public void run() {
-			byte[] recvBuf = new byte[100];
+			byte[] recvBuf = new byte[4096];
 
 			DatagramPacket recvPacket = new DatagramPacket(recvBuf, recvBuf.length);
 
@@ -164,7 +184,7 @@ public class UDPServer {
 					serverapp.receive(recvPacket);
 					String recvStr = new String(recvPacket.getData(), 0, recvPacket.getLength());
 //					String[] recvs = recvStr.split(":");
-					System.out.println(recvStr);
+					//System.out.println(recvStr);
 					int port = recvPacket.getPort();
 					InetAddress addr = recvPacket.getAddress();
 					AppClientMsg msg=UtilTools.sglobalGson.fromJson(recvStr, AppClientMsg.class);

@@ -10,6 +10,7 @@ import java.util.List;
 import com.ef.carparking.app.domain.AppClientInfo;
 import com.ef.carparking.app.domain.AppClientMsg;
 import com.ef.carparking.app.domain.AppMsgLog;
+import com.ef.carparking.domain.DeviceCarparkInfo;
 import com.ef.carparking.domain.DeviceInfo;
 import com.ef.carparking.domain.DeviceLog;
 import com.mysql.jdbc.*;
@@ -42,7 +43,7 @@ public class DbHelper {
 	{
 		Connection conn = getConn();
 	    int i = 0;
-	    String sql = "insert into t_deviceinfo (imei,registerat,lastlogin,lastip,state) values(?,?,?,?,?)";
+	    String sql = "insert into t_deviceinfo (imei,registerat,lastlogin,lastip,workmode,state) values(?,?,?,?,?,?)";
 	    PreparedStatement pstmt;
 	    try {
         	pstmt = (PreparedStatement) conn.prepareStatement(sql);
@@ -51,6 +52,7 @@ public class DbHelper {
  	        pstmt.setTimestamp(col++, new java.sql.Timestamp(deviceinfo.getRegisterat().getTime()));
  	        pstmt.setTimestamp(col++, new java.sql.Timestamp(deviceinfo.getLastlogin().getTime()));
  	        pstmt.setString(col++,deviceinfo.getLastip());
+ 	        pstmt.setInt(col++, deviceinfo.getWorkmode());
  	        pstmt.setInt(col++, deviceinfo.getState());
  	        i=pstmt.executeUpdate();
  	        if(i>0)
@@ -87,7 +89,7 @@ public class DbHelper {
 		DeviceInfo info=null;
 		Connection conn = getConn();
 	    int i = 0;
-	    String sql = "select devid,imei,registerat,lastlogin,lastip,state from  t_deviceinfo where imei=?";
+	    String sql = "select devid,imei,registerat,lastlogin,lastip,workmode,state from  t_deviceinfo where imei=?";
 	    PreparedStatement pstmt;
 	    try {
         	pstmt = (PreparedStatement) conn.prepareStatement(sql);
@@ -106,6 +108,7 @@ public class DbHelper {
  	        	timestmp=rs.getTimestamp("lastlogin");
  	        	if(timestmp!=null)
  	        		info.setLastlogin(new java.util.Date(timestmp.getTime()));
+ 	        	info.setWorkmode(rs.getInt("workmode"));
  	        	info.setState(rs.getInt("state"));
  	        }
 	        pstmt.close();
@@ -134,7 +137,7 @@ public class DbHelper {
 		DeviceInfo info=null;
 		Connection conn = getConn();
 	    int i = 0;
-	    String sql = "select devid,imei,registerat,lastlogin,lastip,state from  t_deviceinfo";
+	    String sql = "select devid,imei,registerat,lastlogin,lastip,workmode,state from  t_deviceinfo";
 	    PreparedStatement pstmt;
 	    try {
         	pstmt = (PreparedStatement) conn.prepareStatement(sql);
@@ -153,6 +156,7 @@ public class DbHelper {
  	        	timestmp=rs.getTimestamp("lastlogin");
  	        	if(timestmp!=null)
  	        		info.setLastlogin(new java.util.Date(timestmp.getTime()));
+ 	        	info.setWorkmode(rs.getInt("workmode"));
  	        	info.setState(rs.getInt("state"));
  	        	list.add(info);
  	        }
@@ -180,7 +184,7 @@ public class DbHelper {
 	{
 		Connection conn = getConn();
 	    int i = 0;
-	    String sql = "update t_deviceinfo set imei=?,registerat=?,lastlogin=?,lastip=?,state=? where devid=?";
+	    String sql = "update t_deviceinfo set imei=?,registerat=?,lastlogin=?,lastip=?,workmode=?,state=? where devid=?";
 	    PreparedStatement pstmt;
 	    try {
         	pstmt = (PreparedStatement) conn.prepareStatement(sql);
@@ -189,6 +193,7 @@ public class DbHelper {
  	        pstmt.setTimestamp(col++, new java.sql.Timestamp(deviceinfo.getRegisterat().getTime()));
  	        pstmt.setTimestamp(col++, new java.sql.Timestamp(deviceinfo.getLastlogin().getTime()));
  	        pstmt.setString(col++,deviceinfo.getLastip());
+ 	        pstmt.setInt(col++,deviceinfo.getWorkmode());
  	        pstmt.setInt(col++, deviceinfo.getState());
  	        pstmt.setInt(col++, deviceinfo.getDeviceid());
  	        i=pstmt.executeUpdate();
@@ -503,5 +508,83 @@ public class DbHelper {
 			}
 	    }
 	    return 0;
+	}
+
+
+	public static void Insert(DeviceCarparkInfo parkinfo) {
+		//System.out.println("Insert park date");
+		Connection conn = getConn();
+	    int i = 0;
+	    String sql = "update t_devicecarpark set carparkstate=?,lastupdat=? where deviceid=?";
+	    PreparedStatement pstmt;
+	    try {
+        	pstmt = (PreparedStatement) conn.prepareStatement(sql);
+ 	        int col=1;
+            
+            pstmt.setInt(col++,parkinfo.carparkstate);
+ 	        pstmt.setTimestamp(col++, new java.sql.Timestamp(parkinfo.lastupdat.getTime()));
+ 	        pstmt.setInt(col++,parkinfo.deviceid);
+ 	        
+ 	        pstmt.executeUpdate();
+ 	        //System.out.println(String.format("Insert park state:%d,%d",parkinfo.carparkstate,parkinfo.deviceid));
+	        pstmt.close();
+	        //System.out.println("Insert park date finish");
+	        //conn.close();
+	    } catch (SQLException e) {
+	        //e.printStackTrace();
+	    	System.out.println(e.getMessage());
+	    }
+	    finally
+	    {
+	    	try {
+				if(conn!=null)
+					conn.close();
+			} catch (SQLException e) {
+				
+				e.printStackTrace();
+			}
+	    }
+		
+	}
+	
+	public static DeviceCarparkInfo GetParkInfo(int deviceid) {
+		Connection conn = getConn();
+	    
+	    DeviceCarparkInfo info=null;
+	    String sql = "select carparkstate,lastupdat from  t_devicecarpark  where deviceid=?";
+	    PreparedStatement pstmt;
+	    try {
+        	pstmt = (PreparedStatement) conn.prepareStatement(sql);
+ 	        int col=1;
+            
+ 	        pstmt.setInt(col++,deviceid);
+ 	        
+ 	        ResultSet rs=pstmt.executeQuery();
+ 	        if(rs.first())
+ 	        {
+ 	        	info=new DeviceCarparkInfo();
+ 	        	info.carparkstate=rs.getInt("carparkstate");
+ 	        	info.lastupdat=rs.getTimestamp("lastupdat");
+ 	        	info.deviceid=deviceid;
+ 	        }
+ 	       
+	        pstmt.close();
+		    
+	        //conn.close();
+	    } catch (SQLException e) {
+	        //e.printStackTrace();
+	    	System.out.println(e.getMessage());
+	    }
+	    finally
+	    {
+	    	try {
+				if(conn!=null)
+					conn.close();
+			} catch (SQLException e) {
+				
+				e.printStackTrace();
+			}
+	    }
+		return info;
 	}
 }

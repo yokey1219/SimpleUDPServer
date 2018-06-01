@@ -13,6 +13,7 @@ import java.util.Map.Entry;
 
 import com.ef.carparking.app.domain.AppCallBackData;
 import com.ef.carparking.app.domain.AppCmdArg;
+import com.ef.carparking.app.domain.AppCommandUtil;
 import com.ef.carparking.app.domain.DevMsgToAPP;
 import com.ef.carparking.domain.DeviceMsg;
 import com.ef.carparking.util.UtilTools;
@@ -35,46 +36,54 @@ public class DevWatchControl {
 		arg.argtype="String";
 		arg.argvalue=msg.getHexContent();
 		devmsg.args.add(arg);
+		//System.out.println(String.format("check imei:%s",imei));
 		if(watchmap.containsKey(imei))
 		{
+			//System.out.println("checked!");
 			List<Watcher> list=new ArrayList<Watcher>();
 			list.addAll(watchmap.get(imei));
 			new Thread(new Runnable()
 				{
 					@Override
 					public void run() {
-						try {
+						//try {
 							AppCallBackData data=new AppCallBackData();
 							data.rsltcode=0;
+							data.cmdid=AppCommandUtil.APPCMD_WATCHDEV;
 							data.data=devmsg;
-							data.keepthread=true;
+							//data.keepthread=true;
 							String send=UtilTools.sglobalGson.toJson(data);
 							byte[] sendbuffer=null;
-							try {
-								sendbuffer = send.getBytes("utf-8");
-							} catch (UnsupportedEncodingException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
-							DatagramSocket socket=new DatagramSocket();
-							DatagramPacket pack=new DatagramPacket(sendbuffer,0,sendbuffer.length);
+							//try {
+								sendbuffer = send.getBytes();
+							//} catch (UnsupportedEncodingException e) {
+								
+							//	e.printStackTrace();
+							//}
+							
+							
+							
 							for(Watcher watcher:list)
 							{
-								pack.setAddress(watcher.addr);
-								pack.setPort(watcher.port);
-								try {
-									socket.send(pack);
-								} catch (IOException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								}
-								
+								//DatagramSocket socket=new DatagramSocket();
+								//DatagramPacket pack=new DatagramPacket(sendbuffer,0,sendbuffer.length,watcher.addr,watcher.port);
+								//pack.setAddress(watcher.addr);
+								//pack.setPort(watcher.port);
+								//System.out.println(String.format("%s:%d", watcher.addr.getHostAddress(),watcher.port));
+								//try {
+								//	socket.send(pack);
+								//} catch (IOException e) {
+									
+								//	e.printStackTrace();
+								//}
+								//socket.close();
+								UDPServer.PrepareAppSendPacket(send,watcher.addr,watcher.port);
 							}
-							socket.close();
-						} catch (SocketException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
+							
+						//} catch (SocketException e) {
+							
+						//	e.printStackTrace();
+						//}
 						list.clear();
 					}
 			
